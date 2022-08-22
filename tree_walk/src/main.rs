@@ -4,6 +4,8 @@ use std::io::{stdin, stdout};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
+use tree_walk::scanner::scan_tokens;
+
 #[derive(Parser)]
 #[clap(version)]
 struct Args {
@@ -43,5 +45,8 @@ fn run_prompt() -> std::io::Result<()> {
 }
 
 fn run(source: String) {
-    println!("{}", source);
+    let tokens = scan_tokens(source);
+    for token in tokens {
+        println!("{:?}", token);
+    }
 }
