@@ -1,6 +1,7 @@
 use clap::Parser;
 use std::fs::File;
-use std::io::Read;
+use std::io::{stdin, stdout};
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -28,7 +29,16 @@ fn run_file(script: PathBuf) -> std::io::Result<()> {
 }
 
 fn run_prompt() -> std::io::Result<()> {
-    println!("prompt");
+    loop {
+        print!("> ");
+        stdout().flush()?;
+        let mut buffer = String::new();
+        stdin().read_line(&mut buffer)?;
+        if buffer.is_empty() {
+            break;
+        }
+        run(buffer);
+    }
     Ok(())
 }
 
