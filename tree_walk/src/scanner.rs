@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
     // single-character tokens
@@ -61,44 +63,75 @@ impl Token {
     }
 }
 
+struct Source {
+    text: VecDeque<char>,
+    line: usize,
+    eof_sent: bool,
+}
+
+impl Source {
+    pub fn new(source: String) -> Self {
+        let mut text = VecDeque::new();
+        for c in source.chars() {
+            text.push_back(c);
+        }
+        Self {
+            text,
+            line: 0,
+            eof_sent: false,
+        }
+    }
+}
+
+impl Iterator for Source {
+    type Item = Result<Token, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.text.pop_front() {
+            Some('(') => Some(Ok(Token::new(TokenType::LeftParen, self.line))),
+            Some(')') => Some(Ok(Token::new(TokenType::RightParen, self.line))),
+            Some('{') => Some(Ok(Token::new(TokenType::LeftBrace, self.line))),
+            Some('}') => Some(Ok(Token::new(TokenType::RightBrace, self.line))),
+            Some(',') => Some(Ok(Token::new(TokenType::Comma, self.line))),
+            Some('.') => Some(Ok(Token::new(TokenType::Dot, self.line))),
+            Some('-') => Some(Ok(Token::new(TokenType::Minus, self.line))),
+            Some('+') => Some(Ok(Token::new(TokenType::Plus, self.line))),
+            Some(';') => Some(Ok(Token::new(TokenType::Semicolon, self.line))),
+            Some('*') => Some(Ok(Token::new(TokenType::Star, self.line))),
+            Some(c) => Some(Err(Error::BadChar { c, line: self.line })),
+            None => {
+                if !self.eof_sent {
+                    self.eof_sent = true;
+                    Some(Ok(Token::new(TokenType::EOF, self.line)))
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Error {
-    OutOfBounds,
     BadChar { c: char, line: usize },
 }
 
 pub fn scan_tokens(source: String) -> Result<Vec<Token>, Error> {
-    let mut tokens = Vec::new();
-    let mut current = 0;
-    let line = 0;
-    while current < source.chars().count() {
-        // start = current;
-
-        let c = source.chars().nth(current).ok_or(Error::OutOfBounds)?;
-        current += 1;
-
-        match c {
-            '(' => tokens.push(Token::new(TokenType::LeftParen, line)),
-            ')' => tokens.push(Token::new(TokenType::RightParen, line)),
-            '{' => tokens.push(Token::new(TokenType::LeftBrace, line)),
-            '}' => tokens.push(Token::new(TokenType::RightBrace, line)),
-            ',' => tokens.push(Token::new(TokenType::Comma, line)),
-            '.' => tokens.push(Token::new(TokenType::Dot, line)),
-            '-' => tokens.push(Token::new(TokenType::Minus, line)),
-            '+' => tokens.push(Token::new(TokenType::Plus, line)),
-            ';' => tokens.push(Token::new(TokenType::Semicolon, line)),
-            '*' => tokens.push(Token::new(TokenType::Star, line)),
-
-            c => return Err(Error::BadChar { c, line }),
-        }
-    }
-    tokens.push(Token::new(TokenType::EOF, line));
-    Ok(tokens)
+    let tokenizer = Source::new(source);
+    tokenizer.collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_empty_source_eof() {
+        assert_eq!(
+            Ok(vec![Token::new(TokenType::EOF, 0)]),
+            scan_tokens("".to_string())
+        );
+    }
 
     #[test]
     fn test_single_character_literals() {
