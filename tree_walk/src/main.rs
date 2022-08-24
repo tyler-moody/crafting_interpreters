@@ -46,7 +46,7 @@ fn run_prompt() -> std::io::Result<()> {
 
 fn run(source: String) {
     let tokens = scan_tokens(source);
-    for token in tokens {
+    if let Ok(token) = tokens {
         println!("{:?}", token);
     }
 }

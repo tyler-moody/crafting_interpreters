@@ -88,7 +88,7 @@ impl Iterator for Source {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.text.len() > 1 && self.text[0] == '/' && self.text[1] == '/' {
-            while self.text.len() > 0 && self.text.front() != Some(&'\n') {
+            while !self.text.is_empty() && self.text.front() != Some(&'\n') {
                 self.text.pop_front();
             }
         }
@@ -170,16 +170,9 @@ impl Iterator for Source {
             }
             Some(c @ '0'..='9') => {
                 let mut literal = String::from(c);
-                loop {
-                    match self.text.front() {
-                        Some(c @ '0'..='9' | c @ '.') => {
-                            literal.push(*c);
-                            self.text.pop_front();
-                        }
-                        _ => {
-                            break;
-                        }
-                    }
+                while let Some(c @ '0'..='9' | c @ '.') = self.text.front() {
+                    literal.push(*c);
+                    self.text.pop_front();
                 }
                 match literal.parse::<f32>() {
                     Ok(n) => Some(Ok(Token::new(TokenType::Number(n), self.line))),
@@ -191,14 +184,11 @@ impl Iterator for Source {
             }
             Some(c @ 'a'..='z' | c @ 'A'..='Z' | c @ '_') => {
                 let mut literal = String::from(c);
-                loop {
-                    match self.text.front() {
-                        Some(c @ 'a'..='z' | c @ 'A'..='Z' | c @ '_' | c @ '0'..='9') => {
-                            literal.push(*c);
-                            self.text.pop_front();
-                        }
-                        _ => break,
-                    }
+                while let Some(c @ 'a'..='z' | c @ 'A'..='Z' | c @ '_' | c @ '0'..='9') =
+                    self.text.front()
+                {
+                    literal.push(*c);
+                    self.text.pop_front();
                 }
                 match &literal[..] {
                     "and" => Some(Ok(Token::new(TokenType::And, self.line))),
