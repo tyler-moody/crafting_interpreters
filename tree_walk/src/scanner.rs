@@ -87,6 +87,27 @@ impl Iterator for Source {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.text.len() > 1 && self.text[0] == '/' && self.text[1] == '/' {
+            while self.text.len() > 0 && self.text.front() != Some(&'\n') {
+                self.text.pop_front();
+            }
+        }
+
+        loop {
+            match self.text.front() {
+                Some('\n') => {
+                    self.line += 1;
+                    self.text.pop_front();
+                }
+                Some(' ') | Some('\r') | Some('\t') => {
+                    self.text.pop_front();
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+
         match self.text.pop_front() {
             Some('(') => Some(Ok(Token::new(TokenType::LeftParen, self.line))),
             Some(')') => Some(Ok(Token::new(TokenType::RightParen, self.line))),
@@ -126,6 +147,7 @@ impl Iterator for Source {
                 }
                 _ => Some(Ok(Token::new(TokenType::Less, self.line))),
             },
+            Some('/') => Some(Ok(Token::new(TokenType::Slash, self.line))),
             Some(c) => Some(Err(Error::BadChar { c, line: self.line })),
             None => {
                 if !self.eof_sent {
@@ -241,6 +263,29 @@ mod tests {
                 Token::new(TokenType::EOF, 0)
             ]),
             scan_tokens("<=".to_string())
+        );
+
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Slash, 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens("/".to_string())
+        );
+        assert_eq!(
+            Ok(vec![Token::new(TokenType::EOF, 0)]),
+            scan_tokens("//".to_string())
+        );
+    }
+
+    #[test]
+    fn test_whitespace() {
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Slash, 1),
+                Token::new(TokenType::EOF, 1)
+            ]),
+            scan_tokens("//\n \t/".to_string())
         );
     }
 
