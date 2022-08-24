@@ -28,7 +28,7 @@ pub enum TokenType {
     // literals
     Identifier,
     Str(String),
-    Number,
+    Number(f32),
 
     // keywords
     And,
@@ -168,6 +168,27 @@ impl Iterator for Source {
                 }
                 Some(Ok(Token::new(TokenType::Str(literal), self.line)))
             }
+            Some(c @ '0'..='9') => {
+                let mut literal = String::from(c);
+                loop {
+                    match self.text.front() {
+                        Some(c @ '0'..='9' | c @ '.') => {
+                            literal.push(*c);
+                            self.text.pop_front();
+                        }
+                        _ => {
+                            break;
+                        }
+                    }
+                }
+                match literal.parse::<f32>() {
+                    Ok(n) => Some(Ok(Token::new(TokenType::Number(n), self.line))),
+                    _ => Some(Err(Error::NumberParse {
+                        literal,
+                        line: self.line,
+                    })),
+                }
+            }
             Some(c) => Some(Err(Error::BadChar { c, line: self.line })),
             None => {
                 if !self.eof_sent {
@@ -185,6 +206,7 @@ impl Iterator for Source {
 pub enum Error {
     BadChar { c: char, line: usize },
     UnterminatedString { line: usize },
+    NumberParse { literal: String, line: usize },
 }
 
 pub fn scan_tokens(source: String) -> Result<Vec<Token>, Error> {
@@ -342,6 +364,40 @@ mod tests {
         assert_eq!(
             Err(Error::UnterminatedString { line: 3 }),
             scan_tokens("\"foo\n\n\nbar".to_string())
+        );
+    }
+
+    #[test]
+    fn test_number_literal() {
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Number(12.345), 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens("12.345".to_string())
+        );
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Number(12345.0), 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens("12345".to_string())
+        );
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Number(0.12345), 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens("0.12345".to_string())
+        );
+        // violates a grammar rule, but this is the correct sequence of tokens
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Dot, 0),
+                Token::new(TokenType::Number(12345.0), 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens(".12345".to_string())
         );
     }
 }
