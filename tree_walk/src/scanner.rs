@@ -27,7 +27,7 @@ pub enum TokenType {
 
     // literals
     Identifier,
-    Str,
+    Str(String),
     Number,
 
     // keywords
@@ -148,6 +148,26 @@ impl Iterator for Source {
                 _ => Some(Ok(Token::new(TokenType::Less, self.line))),
             },
             Some('/') => Some(Ok(Token::new(TokenType::Slash, self.line))),
+            Some('"') => {
+                let mut literal = String::new();
+                loop {
+                    match self.text.pop_front() {
+                        Some('\n') => {
+                            self.line += 1;
+                        }
+                        Some('"') => {
+                            break;
+                        }
+                        Some(c) => {
+                            literal.push(c);
+                        }
+                        None => {
+                            return Some(Err(Error::UnterminatedString { line: self.line }));
+                        }
+                    }
+                }
+                Some(Ok(Token::new(TokenType::Str(literal), self.line)))
+            }
             Some(c) => Some(Err(Error::BadChar { c, line: self.line })),
             None => {
                 if !self.eof_sent {
@@ -164,6 +184,7 @@ impl Iterator for Source {
 #[derive(Debug, PartialEq)]
 pub enum Error {
     BadChar { c: char, line: usize },
+    UnterminatedString { line: usize },
 }
 
 pub fn scan_tokens(source: String) -> Result<Vec<Token>, Error> {
@@ -294,6 +315,33 @@ mod tests {
         assert_eq!(
             Err(Error::BadChar { c: '&', line: 0 }),
             scan_tokens("&".to_string())
+        );
+    }
+
+    #[test]
+    fn test_string_literal() {
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Str("foo".to_string()), 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens("\"foo\"".to_string())
+        );
+    }
+
+    #[test]
+    fn test_unterminated_string_literal() {
+        assert_eq!(
+            Err(Error::UnterminatedString { line: 0 }),
+            scan_tokens("\"foo".to_string())
+        );
+    }
+
+    #[test]
+    fn test_unterminated_multiline_string_literal() {
+        assert_eq!(
+            Err(Error::UnterminatedString { line: 3 }),
+            scan_tokens("\"foo\n\n\nbar".to_string())
         );
     }
 }
