@@ -26,7 +26,7 @@ pub enum TokenType {
     LessEqual,
 
     // literals
-    Identifier,
+    Identifier(String),
     Str(String),
     Number(f32),
 
@@ -187,6 +187,37 @@ impl Iterator for Source {
                         literal,
                         line: self.line,
                     })),
+                }
+            }
+            Some(c @ 'a'..='z' | c @ 'A'..='Z' | c @ '_') => {
+                let mut literal = String::from(c);
+                loop {
+                    match self.text.front() {
+                        Some(c @ 'a'..='z' | c @ 'A'..='Z' | c @ '_' | c @ '0'..='9') => {
+                            literal.push(*c);
+                            self.text.pop_front();
+                        }
+                        _ => break,
+                    }
+                }
+                match &literal[..] {
+                    "and" => Some(Ok(Token::new(TokenType::And, self.line))),
+                    "class" => Some(Ok(Token::new(TokenType::Class, self.line))),
+                    "else" => Some(Ok(Token::new(TokenType::Else, self.line))),
+                    "false" => Some(Ok(Token::new(TokenType::False, self.line))),
+                    "for" => Some(Ok(Token::new(TokenType::For, self.line))),
+                    "fun" => Some(Ok(Token::new(TokenType::Fun, self.line))),
+                    "if" => Some(Ok(Token::new(TokenType::If, self.line))),
+                    "nil" => Some(Ok(Token::new(TokenType::Nil, self.line))),
+                    "or" => Some(Ok(Token::new(TokenType::Or, self.line))),
+                    "print" => Some(Ok(Token::new(TokenType::Print, self.line))),
+                    "return" => Some(Ok(Token::new(TokenType::Return, self.line))),
+                    "super" => Some(Ok(Token::new(TokenType::Super, self.line))),
+                    "this" => Some(Ok(Token::new(TokenType::This, self.line))),
+                    "true" => Some(Ok(Token::new(TokenType::True, self.line))),
+                    "var" => Some(Ok(Token::new(TokenType::Var, self.line))),
+                    "while" => Some(Ok(Token::new(TokenType::While, self.line))),
+                    _ => Some(Ok(Token::new(TokenType::Identifier(literal), self.line))),
                 }
             }
             Some(c) => Some(Err(Error::BadChar { c, line: self.line })),
@@ -398,6 +429,46 @@ mod tests {
                 Token::new(TokenType::EOF, 0)
             ]),
             scan_tokens(".12345".to_string())
+        );
+    }
+
+    #[test]
+    fn test_identifier() {
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::Identifier("orchid".to_string()), 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens("orchid".to_string())
+        );
+    }
+
+    #[test]
+    fn test_keywords() {
+        assert_eq!(
+            Ok(vec![
+                Token::new(TokenType::And, 0),
+                Token::new(TokenType::Class, 0),
+                Token::new(TokenType::Else, 0),
+                Token::new(TokenType::False, 0),
+                Token::new(TokenType::For, 0),
+                Token::new(TokenType::Fun, 0),
+                Token::new(TokenType::If, 0),
+                Token::new(TokenType::Nil, 0),
+                Token::new(TokenType::Or, 0),
+                Token::new(TokenType::Print, 0),
+                Token::new(TokenType::Return, 0),
+                Token::new(TokenType::Super, 0),
+                Token::new(TokenType::This, 0),
+                Token::new(TokenType::True, 0),
+                Token::new(TokenType::Var, 0),
+                Token::new(TokenType::While, 0),
+                Token::new(TokenType::EOF, 0)
+            ]),
+            scan_tokens(
+                "and class else false for fun if nil or print return super this true var while"
+                    .to_string()
+            )
         );
     }
 }
