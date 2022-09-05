@@ -4,7 +4,7 @@ use std::io::{stdin, stdout};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-use tree_walk::scanner::scan_tokens;
+use tree_walk::scan::scan_tokens;
 
 #[derive(Parser)]
 #[clap(version)]

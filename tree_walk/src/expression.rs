@@ -1,4 +1,4 @@
-use crate::scanner::Token;
+use crate::scan::Token;
 
 pub enum Expression<'a> {
     Literal {
@@ -46,7 +46,7 @@ fn parenthesize(name: &impl std::fmt::Display, expressions: &[&Expression]) -> S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scanner::TokenType;
+    use crate::scan::TokenType;
 
     #[test]
     fn test_expression_instances() {
