@@ -1,20 +1,21 @@
 use crate::scan::Token;
 
-pub enum Expression<'a> {
+#[derive(Debug, PartialEq)]
+pub enum Expression {
     Literal {
-        value: Box<dyn std::fmt::Display>,
+        value: f32,
     },
     Unary {
         operator: Token,
-        expression: &'a Expression<'a>,
+        expression: Box<Expression>,
     },
     Binary {
-        left: &'a Expression<'a>,
+        left: Box<Expression>,
         operator: Token,
-        right: &'a Expression<'a>,
+        right: Box<Expression>,
     },
     Grouping {
-        expression: &'a Expression<'a>,
+        expression: Box<Expression>,
     },
 }
 
@@ -50,36 +51,28 @@ mod tests {
 
     #[test]
     fn test_expression_instances() {
-        let foo = Expression::Literal {
-            value: Box::new("foo".to_string()),
-        };
+        let _literal = Expression::Literal { value: 5.0 };
 
         let _unary = Expression::Unary {
             operator: Token::new(TokenType::Minus, 0),
-            expression: &foo,
+            expression: Box::new(Expression::Literal { value: 5.0 }),
         };
 
-        let bar = Expression::Literal {
-            value: Box::new("bar".to_string()),
-        };
-
-        let binary = Expression::Binary {
-            left: &foo,
+        let _binary = Expression::Binary {
+            left: Box::new(Expression::Literal { value: 5.0 }),
             operator: Token::new(TokenType::Plus, 0),
-            right: &bar,
+            right: Box::new(Expression::Literal { value: 6.0 }),
         };
 
         let _grouping = Expression::Grouping {
-            expression: &binary,
+            expression: Box::new(Expression::Literal { value: 5.0 }),
         };
     }
 
     #[test]
     fn test_print_literal() {
-        let expected = "foo".to_string();
-        let literal = Expression::Literal {
-            value: Box::new(expected.clone()),
-        };
+        let expected = "5".to_string();
+        let literal = Expression::Literal { value: 5.0 };
 
         assert_eq!(expected, print(&literal));
     }
@@ -88,52 +81,40 @@ mod tests {
     fn test_print_unary() {
         let unary = Expression::Unary {
             operator: Token::new(TokenType::Minus, 0),
-            expression: &Expression::Literal {
-                value: Box::new("foo".to_string()),
-            },
+            expression: Box::new(Expression::Literal { value: 5.0 }),
         };
-        assert_eq!("(- foo)".to_string(), print(&unary));
+        assert_eq!("(- 5)".to_string(), print(&unary));
     }
 
     #[test]
     fn test_print_binary() {
         let binary = Expression::Binary {
-            left: &Expression::Literal {
-                value: Box::new("foo".to_string()),
-            },
+            left: Box::new(Expression::Literal { value: 5.0 }),
             operator: Token::new(TokenType::Minus, 0),
-            right: &Expression::Literal {
-                value: Box::new("bar".to_string()),
-            },
+            right: Box::new(Expression::Literal { value: 6.0 }),
         };
-        assert_eq!("(- foo bar)", print(&binary));
+        assert_eq!("(- 5 6)", print(&binary));
     }
 
     #[test]
     fn test_print_grouping() {
         let grouping = Expression::Grouping {
-            expression: &Expression::Literal {
-                value: Box::new("foo".to_string()),
-            },
+            expression: Box::new(Expression::Literal { value: 5.0 }),
         };
-        assert_eq!("(group foo)".to_string(), print(&grouping));
+        assert_eq!("(group 5)".to_string(), print(&grouping));
     }
 
     #[test]
     fn test_example() {
         let expression = Expression::Binary {
-            left: &Expression::Unary {
+            left: Box::new(Expression::Unary {
                 operator: Token::new(TokenType::Minus, 0),
-                expression: &Expression::Literal {
-                    value: Box::new(123),
-                },
-            },
+                expression: Box::new(Expression::Literal { value: 123.00 }),
+            }),
             operator: Token::new(TokenType::Star, 0),
-            right: &Expression::Grouping {
-                expression: &Expression::Literal {
-                    value: Box::new(45.67),
-                },
-            },
+            right: Box::new(Expression::Grouping {
+                expression: Box::new(Expression::Literal { value: 45.67 }),
+            }),
         };
         assert_eq!("(* (- 123) (group 45.67))".to_string(), print(&expression));
     }
