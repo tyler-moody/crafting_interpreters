@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TokenType {
     // single-character tokens
     LeftParen,
@@ -60,6 +60,10 @@ pub struct Token {
 impl Token {
     pub fn new(type_: TokenType, line: usize) -> Self {
         Self { type_, line }
+    }
+
+    pub fn token_type(&self) -> TokenType {
+        self.type_.clone()
     }
 }
 
