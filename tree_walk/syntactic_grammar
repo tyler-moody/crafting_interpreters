@@ -1,15 +1,25 @@
-expression  ->  literal
-            |   unary
-            |   binary
-            |   grouping ;
+# each expression rule matches at its precedence level *or higher*
+expression  ->  equality ;
 
-literal     ->  NUMBER | STRING | "true" | "false" | "nil" ;
+equality    -> comparison ( ("==" | "!=") comparison )* ;
 
-grouping    ->  "(" expression ")" ;
+comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term)* ;
 
-unary       ->  ( "-" | "!" ) expression ;
+term        -> factor ( ( "-" | "+" ) factor)* ;
 
-binary      ->  expression operator expression ;
+factor      -> unary ( ( "/" | "*" ) unary )* ;
 
-operator    ->  "==" | "!=" | "<" | "<=" | ">" | ">="
-            |   "+" | "-" | "*" | "/" ;   
+unary       ->  ( "-" | "!" ) unary 
+            |   primary ;
+
+primary     ->  NUMBER | STRING | "true" | "false" | "nil" 
+            |   "(" expression ")" ;
+
+
+
+# How to implement the syntax rules:
+#   terminal: code to match and consume the token
+#   nonterminal: call to that rule's function
+#   |: if or switch statement
+#   * or +: while or for loop
+#   ?: if statement
