@@ -6,6 +6,7 @@ use std::collections::VecDeque;
 #[derive(Debug, PartialEq)]
 pub enum Error {
     Placeholder,
+    UnclosedParen,
 }
 
 pub fn parse(mut tokens: VecDeque<Token>) -> Result<Vec<Box<Expression>>, Error> {
@@ -108,11 +109,18 @@ fn primary(tokens: &mut VecDeque<Token>) -> Result<Box<Expression>, Error> {
         return Err(Error::Placeholder);
     }
     match tokens.pop_front().ok_or(Error::Placeholder)?.token_type() {
+        TokenType::LeftParen => {
+            let expression = expression(tokens)?;
+            let closing_paren = tokens.pop_front().ok_or(Error::UnclosedParen)?;
+            if closing_paren.token_type() != TokenType::RightParen {
+                return Err(Error::UnclosedParen);
+            }
+            Ok(Box::new(Expression::Grouping { expression }))
+        }
         TokenType::Number(n) => Ok(Box::new(Expression::Literal { value: Float(n) })),
         TokenType::Str(s) => Ok(Box::new(Expression::Literal { value: Str(s) })),
         TokenType::True => Ok(Box::new(Expression::Literal { value: True })),
         TokenType::False => Ok(Box::new(Expression::Literal { value: False })),
-        // TODO grouping
         _ => Err(Error::Placeholder),
     }
 }
@@ -212,5 +220,52 @@ mod tests {
     fn test_equality() {
         test_binary(TokenType::EqualEqual);
         test_binary(TokenType::BangEqual);
+    }
+
+    #[test]
+    fn test_grouping() {
+        let mut tokens = VecDeque::new();
+        tokens.push_back(Token::new(TokenType::LeftParen, 0));
+        tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(TokenType::RightParen, 0));
+        let expected = Box::new(Expression::Grouping {
+            expression: Box::new(Expression::Literal { value: Float(5.0) }),
+        });
+        assert_eq!(Ok(vec![expected]), parse(tokens));
+    }
+
+    #[test]
+    fn test_grouped_expression() {
+        let mut tokens = VecDeque::new();
+        tokens.push_back(Token::new(TokenType::LeftParen, 0));
+        tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(TokenType::Star, 0));
+        tokens.push_back(Token::new(TokenType::Number(6.0), 0));
+        tokens.push_back(Token::new(TokenType::RightParen, 0));
+        let expected = Box::new(Expression::Grouping {
+            expression: Box::new(Expression::Binary {
+                left: Box::new(Expression::Literal { value: Float(5.0) }),
+                operator: Token::new(TokenType::Star, 0),
+                right: Box::new(Expression::Literal { value: Float(6.0) }),
+            }),
+        });
+        assert_eq!(Ok(vec![expected]), parse(tokens));
+    }
+
+    #[test]
+    fn test_grouping_unclosed() {
+        let mut tokens = VecDeque::new();
+        tokens.push_back(Token::new(TokenType::LeftParen, 0));
+        tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        assert_eq!(Err(Error::UnclosedParen), parse(tokens));
+    }
+
+    #[test]
+    fn test_grouping_unclosed_more_tokens() {
+        let mut tokens = VecDeque::new();
+        tokens.push_back(Token::new(TokenType::LeftParen, 0));
+        tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        assert_eq!(Err(Error::UnclosedParen), parse(tokens));
     }
 }
