@@ -1,5 +1,5 @@
+use crate::expression::Expression;
 use crate::expression::Value::*;
-use crate::expression::{Expression, Value};
 use crate::scan::{Token, TokenType};
 use std::collections::VecDeque;
 
@@ -173,5 +173,44 @@ mod tests {
             expression: Box::new(Expression::Literal { value: True }),
         });
         assert_eq!(Ok(vec![expected]), parse(tokens));
+    }
+
+    fn test_binary(type_: TokenType) {
+        let mut tokens = VecDeque::new();
+        tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(type_.clone(), 0));
+        tokens.push_back(Token::new(TokenType::Number(6.0), 0));
+        let expected = Box::new(Expression::Binary {
+            left: Box::new(Expression::Literal { value: Float(5.0) }),
+            operator: Token::new(type_, 0),
+            right: Box::new(Expression::Literal { value: Float(6.0) }),
+        });
+        assert_eq!(Ok(vec![expected]), parse(tokens));
+    }
+
+    #[test]
+    fn test_factor() {
+        test_binary(TokenType::Star);
+        test_binary(TokenType::Slash);
+    }
+
+    #[test]
+    fn test_term() {
+        test_binary(TokenType::Plus);
+        test_binary(TokenType::Minus);
+    }
+
+    #[test]
+    fn test_comparison() {
+        test_binary(TokenType::Greater);
+        test_binary(TokenType::GreaterEqual);
+        test_binary(TokenType::Less);
+        test_binary(TokenType::LessEqual);
+    }
+
+    #[test]
+    fn test_equality() {
+        test_binary(TokenType::EqualEqual);
+        test_binary(TokenType::BangEqual);
     }
 }
