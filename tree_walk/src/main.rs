@@ -1,9 +1,11 @@
 use clap::Parser;
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{stdin, stdout};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
+use tree_walk::parse::parse;
 use tree_walk::scan::scan_tokens;
 
 #[derive(Parser)]
@@ -46,7 +48,25 @@ fn run_prompt() -> std::io::Result<()> {
 
 fn run(source: String) {
     let tokens = scan_tokens(source);
-    if let Ok(token) = tokens {
+    if let Ok(ref token) = tokens {
         println!("{:?}", token);
+    }
+    match tokens {
+        Ok(tokens) => {
+            let expressions = parse(VecDeque::from_iter(tokens));
+            match expressions {
+                Ok(expressions) => {
+                    for expression in expressions {
+                        println!("{:?}", expression);
+                    }
+                }
+                Err(parse_error) => {
+                    println!("error parsing: {:?}", parse_error);
+                }
+            }
+        }
+        Err(scan_error) => {
+            println!("error scanning tokens: {:?}", scan_error)
+        }
     }
 }

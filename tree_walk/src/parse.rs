@@ -7,14 +7,22 @@ use std::collections::VecDeque;
 pub enum Error {
     Placeholder,
     UnclosedParen,
+    NoExpression,
+    MissingEOF,
 }
 
 pub fn parse(mut tokens: VecDeque<Token>) -> Result<Vec<Box<Expression>>, Error> {
     let mut expressions = Vec::new();
-    while tokens.len() > 0 {
+    while tokens.len() > 1 {
         expressions.push(expression(&mut tokens)?);
     }
-    Ok(expressions)
+    if tokens[0].token_type() != TokenType::EOF {
+        Err(Error::MissingEOF)
+    } else if expressions.len() < 1 {
+        Err(Error::NoExpression)
+    } else {
+        Ok(expressions)
+    }
 }
 
 fn expression(tokens: &mut VecDeque<Token>) -> Result<Box<Expression>, Error> {
@@ -121,7 +129,7 @@ fn primary(tokens: &mut VecDeque<Token>) -> Result<Box<Expression>, Error> {
         TokenType::Str(s) => Ok(Box::new(Expression::Literal { value: Str(s) })),
         TokenType::True => Ok(Box::new(Expression::Literal { value: True })),
         TokenType::False => Ok(Box::new(Expression::Literal { value: False })),
-        _ => Err(Error::Placeholder),
+        _ => Err(Error::NoExpression),
     }
 }
 
@@ -131,21 +139,23 @@ mod tests {
     use crate::scan::{Token, TokenType};
 
     #[test]
-    fn test_placeholder() {
+    fn test_parse_no_expression() {
         let mut tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::EOF, 0));
-        assert_eq!(Err(Error::Placeholder), parse(tokens));
+        assert_eq!(Err(Error::NoExpression), parse(tokens));
     }
 
     #[test]
     fn test_literal() {
         let mut tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Literal { value: Float(5.0) });
         assert_eq!(Ok(vec![expected]), parse(tokens));
 
         tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::Str("foo".to_string()), 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Literal {
             value: Str("foo".to_string()),
         });
@@ -153,11 +163,13 @@ mod tests {
 
         tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::False, 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Literal { value: False });
         assert_eq!(Ok(vec![expected]), parse(tokens));
 
         tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::True, 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Literal { value: True });
         assert_eq!(Ok(vec![expected]), parse(tokens));
     }
@@ -167,6 +179,7 @@ mod tests {
         let mut tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::Minus, 0));
         tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Unary {
             operator: Token::new(TokenType::Minus, 0),
             expression: Box::new(Expression::Literal { value: Float(5.0) }),
@@ -176,6 +189,7 @@ mod tests {
         tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::Bang, 0));
         tokens.push_back(Token::new(TokenType::True, 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Unary {
             operator: Token::new(TokenType::Bang, 0),
             expression: Box::new(Expression::Literal { value: True }),
@@ -188,6 +202,7 @@ mod tests {
         tokens.push_back(Token::new(TokenType::Number(5.0), 0));
         tokens.push_back(Token::new(type_.clone(), 0));
         tokens.push_back(Token::new(TokenType::Number(6.0), 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Binary {
             left: Box::new(Expression::Literal { value: Float(5.0) }),
             operator: Token::new(type_, 0),
@@ -228,6 +243,7 @@ mod tests {
         tokens.push_back(Token::new(TokenType::LeftParen, 0));
         tokens.push_back(Token::new(TokenType::Number(5.0), 0));
         tokens.push_back(Token::new(TokenType::RightParen, 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Grouping {
             expression: Box::new(Expression::Literal { value: Float(5.0) }),
         });
@@ -242,6 +258,7 @@ mod tests {
         tokens.push_back(Token::new(TokenType::Star, 0));
         tokens.push_back(Token::new(TokenType::Number(6.0), 0));
         tokens.push_back(Token::new(TokenType::RightParen, 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         let expected = Box::new(Expression::Grouping {
             expression: Box::new(Expression::Binary {
                 left: Box::new(Expression::Literal { value: Float(5.0) }),
@@ -257,6 +274,7 @@ mod tests {
         let mut tokens = VecDeque::new();
         tokens.push_back(Token::new(TokenType::LeftParen, 0));
         tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         assert_eq!(Err(Error::UnclosedParen), parse(tokens));
     }
 
@@ -266,6 +284,7 @@ mod tests {
         tokens.push_back(Token::new(TokenType::LeftParen, 0));
         tokens.push_back(Token::new(TokenType::Number(5.0), 0));
         tokens.push_back(Token::new(TokenType::Number(5.0), 0));
+        tokens.push_back(Token::new(TokenType::EOF, 0));
         assert_eq!(Err(Error::UnclosedParen), parse(tokens));
     }
 }
