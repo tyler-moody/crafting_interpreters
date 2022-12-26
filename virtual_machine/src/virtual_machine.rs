@@ -1,5 +1,6 @@
 
-use crate::bytecode::{Bytecode, Instruction, Value};
+use crate::bytecode::{Bytecode, Instruction};
+use crate::value::Value;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
