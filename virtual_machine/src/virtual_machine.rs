@@ -48,8 +48,9 @@ impl VirtualMachine {
                 Instruction::Return => {
                     return context.stack.pop().ok_or(Error::NoValue);
                 }
-                _ => {
-                    return Err(Error::NotImplemented)
+                Instruction::Negate => {
+                    let value = context.stack.pop().ok_or(Error::NoValue)?;
+                    context.stack.push(-value);
                 }
             }
         }
@@ -76,11 +77,29 @@ mod tests {
     }
 
     #[test]
-    fn test_execute() {
+    fn test_return() {
         let vm = VirtualMachine::new();
         let mut bytecode = Bytecode::new();
         bytecode.instruction(Instruction::Constant{value: Value::FloatingPoint(5.0)}, 0);
         bytecode.instruction(Instruction::Return, 0);
         assert_eq!(Ok(Value::FloatingPoint(5.0)), vm.execute(bytecode));
+    }
+
+    #[test]
+    fn test_negate_no_value() {
+        let vm = VirtualMachine::new();
+        let mut bytecode = Bytecode::new();
+        bytecode.instruction(Instruction::Negate, 0);
+        assert_eq!(Err(Error::NoValue), vm.execute(bytecode));
+    }
+
+    #[test]
+    fn test_negate() {
+        let vm = VirtualMachine::new();
+        let mut bytecode = Bytecode::new();
+        bytecode.instruction(Instruction::Constant{value: Value::FloatingPoint(5.0)}, 0);
+        bytecode.instruction(Instruction::Negate, 0);
+        bytecode.instruction(Instruction::Return, 0);
+        assert_eq!(Ok(Value::FloatingPoint(-5.0)), vm.execute(bytecode));
     }
 }

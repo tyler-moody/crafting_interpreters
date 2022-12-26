@@ -3,18 +3,22 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Instruction {
-    Constant {value: Value},
     Return,
+    Constant {value: Value},
+    Negate,
 }
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Instruction::Return => {
+                write!(f,"Return")
+            }
             Instruction::Constant{value} => {
                 write!(f, "Constant {}", value)
             }
-            Instruction::Return => {
-                write!(f,"Return")
+            Instruction::Negate => {
+                write!(f, "Negate")
             }
         }
     }

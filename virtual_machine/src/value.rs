@@ -1,5 +1,6 @@
 
 use std::fmt;
+use std::ops::Neg;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Value {
@@ -16,3 +17,14 @@ impl fmt::Display for Value {
     }
 }
 
+impl Neg for Value {
+    type Output = Value;
+
+    fn neg(self) -> Self::Output {
+        match self {
+            Value::FloatingPoint(f) => {
+                Value::FloatingPoint(-f)
+            }
+        }
+    }
+}
