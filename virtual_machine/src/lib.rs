@@ -1,1 +1,2 @@
-pub mod chunk;
+pub mod bytecode;
+pub mod virtual_machine;
