@@ -1,6 +1,7 @@
 
 use std::fmt;
 use std::ops::Neg;
+use try_traits::ops::TryAdd;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Value {

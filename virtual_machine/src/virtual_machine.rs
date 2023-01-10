@@ -52,6 +52,11 @@ impl VirtualMachine {
                     let value = context.stack.pop().ok_or(Error::NoValue)?;
                     context.stack.push(-value);
                 }
+                Instruction::Add => {
+                    let lhs = context.stack.pop().ok_or(Error::NoValue)?;
+                    let rhs = context.stack.pop().ok_or(Error::NoValue)?;
+                    context.stack.push(lhs + rhs);
+                }
             }
         }
     }
@@ -101,5 +106,33 @@ mod tests {
         bytecode.instruction(Instruction::Negate, 0);
         bytecode.instruction(Instruction::Return, 0);
         assert_eq!(Ok(Value::FloatingPoint(-5.0)), vm.execute(bytecode));
+    }
+
+    #[test]
+    fn test_add_empty_stack() {
+        let vm = VirtualMachine::new();
+        let mut bytecode = Bytecode::new();
+        bytecode.instruction(Instruction::Add, 0);
+        assert_eq!(Err(Error::NoValue), vm.execute(bytecode));
+    }
+
+    #[test]
+    fn test_add_only_one_value() {
+        let vm = VirtualMachine::new();
+        let mut bytecode = Bytecode::new();
+        bytecode.instruction(Instruction::Constant{value: Value::FloatingPoint(5.0)}, 0);
+        bytecode.instruction(Instruction::Add, 0);
+        assert_eq!(Err(Error::NoValue), vm.execute(bytecode));
+    }
+
+    #[test]
+    fn test_add() {
+        let vm = VirtualMachine::new();
+        let mut bytecode = Bytecode::new();
+        bytecode.instruction(Instruction::Constant{value: Value::FloatingPoint(5.0)}, 0);
+        bytecode.instruction(Instruction::Constant{value: Value::FloatingPoint(6.0)}, 0);
+        bytecode.instruction(Instruction::Add, 0);
+        bytecode.instruction(Instruction::Return, 0);
+        assert_eq!(Ok(Value::FloatingPoint(11.0)), vm.execute(bytecode));
     }
 }

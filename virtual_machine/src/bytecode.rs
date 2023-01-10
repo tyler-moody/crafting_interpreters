@@ -6,6 +6,7 @@ pub enum Instruction {
     Return,
     Constant {value: Value},
     Negate,
+    Add,
 }
 
 impl fmt::Display for Instruction {
@@ -19,6 +20,9 @@ impl fmt::Display for Instruction {
             }
             Instruction::Negate => {
                 write!(f, "Negate")
+            }
+            Instruction::Add => {
+                write!(f, "Add")
             }
         }
     }
