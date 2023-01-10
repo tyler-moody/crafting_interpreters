@@ -2,4 +2,5 @@
 
 members = [
         "tree_walk",
+        "virtual_machine",
 ]
