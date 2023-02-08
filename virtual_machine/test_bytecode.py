@@ -56,21 +56,3 @@ class ByteCodeTests(unittest.TestCase):
             ),
             code.disassemble(),
         )
-
-
-class ByteCodeTests(unittest.TestCase):
-    def test_disassemble(self) -> None:
-        code = ByteCode()
-        code.add_instruction(Immediate(Value(5.0)), 1)
-        code.add_instruction(Return(), 1)
-        code.add_instruction(Return(), 2)
-        self.assertEqual(
-            textwrap.dedent(
-                """\
-            0    1 0x02 00 00 a0 40 Immediate 5.0
-            5    | 0x01 Return
-            6    2 0x01 Return
-            """
-            ),
-            code.disassemble(),
-        )
